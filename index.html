@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XY空间</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ====== RESET ====== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Inter','Noto Sans SC',-apple-system,sans-serif;
+  background:#0c0c16;
+  color:#d4d4d8;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+/* Background glow orbs */
+body::before{
+  content:'';position:fixed;top:-35%;left:-15%;
+  width:600px;height:600px;
+  background:radial-gradient(circle,rgba(100,120,200,0.12),transparent 70%);
+  border-radius:50%;pointer-events:none;z-index:0;
+}
+body::after{
+  content:'';position:fixed;bottom:-25%;right:-10%;
+  width:500px;height:500px;
+  background:radial-gradient(circle,rgba(140,120,180,0.10),transparent 70%);
+  border-radius:50%;pointer-events:none;z-index:0;
+}
+
+/* ====== LAYOUT ====== */
+.app{height:100vh;display:flex;flex-direction:column;max-width:1280px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
+
+/* ====== HEADER ====== */
+.header{display:flex;align-items:center;justify-content:space-between;padding:28px 0 20px;flex-shrink:0;gap:24px}
+.header-left h1{font-size:18px;font-weight:600;color:#fafafa;letter-spacing:-0.3px}
+.header-left .sub{font-size:12px;color:#6b6b78;font-weight:400;margin-top:2px;font-family:'JetBrains Mono',monospace}
+.header-right{display:flex;align-items:center;gap:20px}
+.clock{text-align:right;line-height:1.3}
+.clock .time{font-size:26px;font-weight:300;color:#fafafa;letter-spacing:1px;font-feature-settings:"tnum";font-family:'JetBrains Mono',monospace}
+.clock .date{font-size:11px;color:#6b6b78;font-weight:400}
+.user-menu{display:flex;align-items:center;gap:10px}
+.user-menu .uname{font-size:13px;font-weight:500;color:#a1a1aa}
+.user-menu .btn{font-size:11px;padding:5px 12px}
+
+/* ====== SEARCH ====== */
+.search-wrap{position:relative}
+.search-wrap input{
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);color:#d4d4d8;
+  font-family:'Inter','Noto Sans SC',sans-serif;font-size:13px;
+  padding:8px 14px 8px 32px;border-radius:8px;width:240px;
+  outline:none;transition:border-color .2s,background .2s;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.search-wrap input:focus{border-color:rgba(255,255,255,0.14);background:rgba(255,255,255,0.05)}
+.search-wrap input::placeholder{color:#52525b}
+.search-wrap .sic{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#52525b;font-size:14px;pointer-events:none}
+
+/* ====== TABS ====== */
+.tabs{display:flex;gap:0;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.tab{background:none;border:none;color:#6b6b78;font-family:'Inter','Noto Sans SC',sans-serif;font-size:13px;font-weight:500;padding:10px 20px;cursor:pointer;position:relative;transition:color .2s;letter-spacing:-0.1px}
+.tab:hover{color:#a1a1aa}
+.tab.active{color:#fafafa}
+.tab.active::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1.5px;background:#fafafa;border-radius:1px}
+.tab .count{display:inline-block;background:rgba(255,255,255,0.05);color:#a1a1aa;font-size:10px;font-weight:500;padding:1px 7px;border-radius:10px;margin-left:6px;min-width:20px;text-align:center}
+
+/* ====== MAIN ====== */
+.main{flex:1;overflow:hidden;padding-top:20px}
+.panel{display:none;height:100%;overflow-y:auto;padding-bottom:20px}
+.panel.active{display:flex;flex-direction:column}
+
+/* ====== TOOLBAR ====== */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-shrink:0;gap:12px;flex-wrap:wrap}
+.toolbar-label{font-size:11px;color:#52525b;text-transform:uppercase;letter-spacing:1.5px;font-weight:500}
+.toolbar-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ====== BUTTONS ====== */
+.btn{
+  font-family:'Inter','Noto Sans SC',sans-serif;font-size:12px;font-weight:500;
+  padding:7px 16px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.03);
+  color:#d4d4d8;transition:all .2s;letter-spacing:-0.1px;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:6px;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.btn:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12)}
+.btn-primary{background:#fafafa;color:#0a0a0a;border-color:#fafafa;font-weight:600;backdrop-filter:none;-webkit-backdrop-filter:none}
+.btn-primary:hover{background:#e4e4e7;border-color:#e4e4e7}
+.btn-danger{color:#ef4444;border-color:rgba(239,68,68,0.2)}
+.btn-danger:hover{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.35)}
+.btn-sm{font-size:11px;padding:5px 12px}
+.btn-xs{font-size:10px;padding:3px 10px}
+
+/* ====== CHIPS ====== */
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:'Inter','Noto Sans SC',sans-serif;font-size:11px;font-weight:500;padding:4px 12px;border-radius:100px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#6b6b78;cursor:pointer;transition:all .2s}
+.chip:hover{color:#a1a1aa;border-color:rgba(255,255,255,0.12)}
+.chip.active{color:#fafafa;border-color:rgba(255,255,255,0.16);background:rgba(255,255,255,0.04)}
+
+/* ====== NOTES ====== */
+.notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;overflow-y:auto;flex:1;align-content:start}
+.note-card{
+  background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
+  border-radius:12px;padding:20px 22px;cursor:pointer;
+  transition:border-color .2s,background .2s,transform .2s;
+  position:relative;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.note-card:hover{border-color:rgba(255,255,255,0.10);background:rgba(255,255,255,0.04);transform:translateY(-1px)}
+.note-card .ntitle{font-size:14px;font-weight:600;color:#fafafa;margin-bottom:8px;letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note-card .npreview{font-size:12px;color:#71717a;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:14px}
+.note-card .nmeta{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#52525b}
+.note-card .ntags{display:flex;gap:4px;flex-wrap:wrap}
+.note-card .ntag{font-size:10px;padding:2px 10px;border-radius:100px;background:rgba(255,255,255,0.04);color:#a1a1aa;font-weight:500;border:1px solid rgba(255,255,255,0.04)}
+.note-card .npublic{position:absolute;top:12px;right:12px;font-size:10px;padding:2px 10px;border-radius:100px;font-weight:500}
+.note-card .npublic.pub{background:rgba(74,222,128,0.08);color:#4ade80;border:1px solid rgba(74,222,128,0.15)}
+.note-card .npublic.priv{background:rgba(255,255,255,0.03);color:#52525b;border:1px solid rgba(255,255,255,0.05)}
+.note-author{font-size:10px;color:#6b6b78;margin-bottom:8px}
+.note-author span{color:#a1a1aa;font-weight:500}
+
+/* ====== TODO ====== */
+.todo-progress{margin-bottom:20px;flex-shrink:0}
+.todo-bar{height:3px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.todo-bar-fill{height:100%;background:#fafafa;border-radius:2px;transition:width .4s ease}
+.todo-bar-text{font-size:11px;color:#52525b;font-weight:500}
+.todo-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.todo-item{
+  display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:10px;
+  border:1px solid transparent;transition:background .2s,border-color .2s;
+}
+.todo-item:hover{
+  background:rgba(255,255,255,0.02);border-color:rgba(255,255,255,0.05);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.todo-check{width:18px;height:18px;border:1.5px solid rgba(255,255,255,0.15);border-radius:5px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;color:transparent;font-size:10px;font-weight:700}
+.todo-check:hover{border-color:rgba(255,255,255,0.35)}
+.todo-item.done .todo-check{background:#fafafa;border-color:#fafafa;color:#0a0a0a}
+.todo-item.done .todo-text{color:#52525b;text-decoration:line-through}
+.todo-text{flex:1;font-size:13px;color:#d4d4d8;word-break:break-word;font-weight:450}
+.todo-prio{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.todo-prio.high{background:#ef4444}
+.todo-prio.medium{background:#f59e0b}
+.todo-prio.low{background:#3b82f6}
+.todo-cat{font-size:10px;padding:2px 10px;border-radius:100px;border:1px solid rgba(255,255,255,0.06);color:#71717a;white-space:nowrap;font-weight:500}
+.todo-del{color:#52525b;cursor:pointer;font-size:15px;line-height:1;padding:2px 6px;border-radius:4px;transition:all .2s;opacity:0;background:none;border:none;font-family:inherit}
+.todo-item:hover .todo-del{opacity:1}
+.todo-del:hover{color:#ef4444;background:rgba(239,68,68,0.08)}
+
+/* ====== BOOKMARKS ====== */
+.bm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;overflow-y:auto;flex:1;align-content:start}
+.bm-card{
+  background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
+  border-radius:12px;padding:18px 20px;cursor:pointer;
+  transition:border-color .2s,background .2s,transform .2s;
+  display:flex;gap:14px;align-items:flex-start;text-decoration:none;
+  color:inherit;position:relative;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.bm-card:hover{border-color:rgba(255,255,255,0.10);background:rgba(255,255,255,0.04);transform:translateY(-1px)}
+.bm-fav{width:36px;height:36px;border-radius:8px;flex-shrink:0;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid rgba(255,255,255,0.06);overflow:hidden}
+.bm-fav img{width:20px;height:20px;border-radius:4px}
+.bm-info{flex:1;min-width:0}
+.bm-info .bmtitle{font-size:13px;font-weight:600;color:#fafafa;margin-bottom:2px;letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bm-info .bmurl{font-size:11px;color:#6b6b78;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px;font-family:'JetBrains Mono',monospace}
+.bm-info .bmdesc{font-size:11px;color:#71717a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5}
+.bm-cat{display:inline-block;font-size:10px;padding:2px 10px;border-radius:100px;border:1px solid rgba(255,255,255,0.06);color:#71717a;margin-top:8px;font-weight:500}
+.bm-act{display:flex;gap:3px;opacity:0;transition:opacity .2s;position:absolute;top:10px;right:10px}
+.bm-card:hover .bm-act{opacity:1}
+.bm-act button{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);color:#71717a;font-size:12px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-family:inherit}
+.bm-act button:hover{color:#d4d4d8;border-color:rgba(255,255,255,0.16)}
+
+/* ====== GUESTBOOK ====== */
+.gb-layout{display:flex;gap:24px;flex:1;overflow:hidden}
+.gb-form-panel{
+  flex:0 0 380px;background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:24px;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.gb-form-panel h3{font-size:15px;font-weight:600;color:#fafafa;margin-bottom:6px;letter-spacing:-0.2px}
+.gb-form-panel .gb-hint{font-size:12px;color:#6b6b78;margin-bottom:20px;line-height:1.5}
+.gb-msgs-panel{
+  flex:1;overflow-y:auto;background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:24px;min-width:0;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.gb-msgs-panel h3{font-size:15px;font-weight:600;color:#fafafa;margin-bottom:16px;letter-spacing:-0.2px}
+.gb-msg-list{display:flex;flex-direction:column;gap:10px}
+.gb-msg{
+  background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);
+  border-radius:10px;padding:14px 18px;position:relative;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.gb-msg .msg-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.gb-msg .msg-name{font-size:12px;font-weight:600;color:#fafafa}
+.gb-msg .msg-time{font-size:10px;color:#52525b;font-family:'JetBrains Mono',monospace}
+.gb-msg .msg-body{font-size:13px;color:#a1a1aa;line-height:1.6}
+.gb-msg .msg-del{position:absolute;top:10px;right:10px;background:none;border:none;color:#52525b;cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;transition:all .2s;opacity:0;font-family:inherit}
+.gb-msg:hover .msg-del{opacity:1}
+.gb-msg .msg-del:hover{color:#ef4444}
+
+/* ====== SETTINGS ====== */
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;overflow-y:auto;flex:1;align-content:start}
+.set-card{
+  background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
+  border-radius:12px;padding:24px;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.set-card h3{font-size:14px;font-weight:600;color:#fafafa;margin-bottom:12px;letter-spacing:-0.2px}
+.set-card p{font-size:12px;color:#71717a;margin-bottom:16px;line-height:1.6}
+.set-card .set-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+.set-card .set-row:last-child{border-bottom:none}
+.set-card .set-label{font-size:12px;color:#d4d4d8}
+.set-card .set-val{font-size:11px;color:#6b6b78;font-family:'JetBrains Mono',monospace}
+
+/* ====== AUTH SCREEN ====== */
+.auth-overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(12,12,22,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.auth-overlay.hidden{display:none}
+.auth-card{
+  background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);
+  border-radius:16px;padding:40px;width:90%;max-width:420px;
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  box-shadow:0 20px 60px rgba(0,0,0,.4);
+}
+.auth-card h2{font-size:22px;font-weight:600;color:#fafafa;margin-bottom:4px;letter-spacing:-0.3px}
+.auth-card .auth-sub{font-size:13px;color:#6b6b78;margin-bottom:28px}
+.auth-card .auth-err{font-size:12px;color:#ef4444;margin-bottom:14px;display:none}
+.auth-card .auth-err.show{display:block}
+.auth-switch{font-size:12px;color:#71717a;text-align:center;margin-top:18px}
+.auth-switch a{color:#fafafa;cursor:pointer;text-decoration:none;font-weight:600;transition:opacity .2s}
+.auth-switch a:hover{opacity:.8}
+.landing-section{margin-top:32px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.05)}
+.landing-section h3{font-size:13px;font-weight:600;color:#a1a1aa;margin-bottom:12px;letter-spacing:-0.1px}
+.landing-public-notes{display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto}
+.landing-note{
+  background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);
+  border-radius:10px;padding:14px 16px;cursor:default;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.landing-note .ln-title{font-size:13px;font-weight:600;color:#fafafa;margin-bottom:2px}
+.landing-note .ln-preview{font-size:11px;color:#71717a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.landing-note .ln-author{font-size:10px;color:#52525b;margin-top:6px}
+
+/* ====== LOADING ====== */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.06);border-top-color:#fafafa;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-wrap{display:flex;align-items:center;justify-content:center;padding:40px;color:#71717a;font-size:13px;gap:10px}
+
+/* ====== MODAL ====== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.modal-overlay.hidden{display:none}
+.modal{
+  background:rgba(18,18,30,0.85);border:1px solid rgba(255,255,255,0.08);
+  border-radius:16px;width:90%;max-width:540px;max-height:85vh;
+  display:flex;flex-direction:column;
+  backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
+  box-shadow:0 24px 80px rgba(0,0,0,.5);
+}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.05)}
+.modal-header h3{font-size:15px;font-weight:600;color:#fafafa;letter-spacing:-0.2px}
+.modal-close{background:none;border:1px solid rgba(255,255,255,0.08);color:#71717a;font-size:16px;width:30px;height:30px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-family:inherit}
+.modal-close:hover{color:#d4d4d8;border-color:rgba(255,255,255,0.20)}
+.modal-body{padding:24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:18px}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:18px 24px;border-top:1px solid rgba(255,255,255,0.05)}
+
+/* ====== FORM ====== */
+.f-group{display:flex;flex-direction:column;gap:6px}
+.f-label{font-size:10px;color:#6b6b78;text-transform:uppercase;letter-spacing:1.5px;font-weight:600}
+.f-input,.f-textarea,.f-select{
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+  color:#d4d4d8;font-family:'Inter','Noto Sans SC',sans-serif;font-size:13px;
+  padding:10px 14px;border-radius:10px;outline:none;
+  transition:border-color .2s,background .2s;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+.f-textarea{resize:vertical;min-height:100px}
+.f-select{cursor:pointer}
+.f-select option{background:#16162a;color:#d4d4d8}
+.f-input:focus,.f-textarea:focus,.f-select:focus{border-color:rgba(255,255,255,0.16);background:rgba(255,255,255,0.05)}
+.f-row{display:flex;gap:12px}
+.f-row>*{flex:1}
+.f-check{display:flex;align-items:center;gap:8px;font-size:13px;color:#a1a1aa;cursor:pointer}
+.f-check input[type=checkbox]{accent-color:#fafafa;width:16px;height:16px;cursor:pointer}
+
+/* ====== TOAST ====== */
+.toast-ctr{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{
+  background:rgba(22,22,38,0.85);border:1px solid rgba(255,255,255,0.08);
+  color:#d4d4d8;font-family:'Inter','Noto Sans SC',sans-serif;font-size:12px;font-weight:500;
+  padding:10px 18px;border-radius:10px;animation:toastIn .25s ease;
+  pointer-events:auto;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  box-shadow:0 4px 24px rgba(0,0,0,.3);
+}
+.toast.ok{border-color:rgba(34,197,94,0.3)}
+.toast.err{border-color:rgba(239,68,68,0.3)}
+@keyframes toastIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ====== EMPTY ====== */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center;color:#52525b}
+.empty .eicon{font-size:40px;margin-bottom:14px;opacity:.4}
+.empty p{font-size:13px;margin-bottom:4px}
+.empty .ehint{font-size:11px;opacity:.5}
+
+/* ====== SCROLLBAR ====== */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.12)}
+
+/* ====== RESPONSIVE ====== */
+@media(max-width:768px){
+  .app{padding:0 16px}
+  .header{flex-direction:column;align-items:flex-start;gap:14px;padding:20px 0 16px}
+  .header-right{width:100%;flex-direction:column;align-items:flex-start;gap:10px}
+  .search-wrap input{width:100%}
+  .clock .time{font-size:20px}
+  .notes-grid{grid-template-columns:1fr}
+  .bm-grid{grid-template-columns:1fr}
+  .settings-grid{grid-template-columns:1fr}
+  .gb-layout{flex-direction:column}
+  .gb-form-panel{flex:0 0 auto}
+  .tab{font-size:11px;padding:8px 12px}
+  .modal{width:95%;max-height:90vh}
+  .f-row{flex-direction:column}
+  .auth-card{padding:24px}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== AUTH SCREEN ====== -->
+<div class="auth-overlay hidden" id="auth-screen">
+  <div class="auth-card">
+    <h2 id="auth-title">登录</h2>
+    <p class="auth-sub" id="auth-subtitle">欢迎回来</p>
+    <div class="auth-err" id="auth-error"></div>
+    <div style="display:flex;flex-direction:column;gap:14px" id="auth-fields"></div>
+    <div id="auth-btn-wrap" style="margin-top:18px"></div>
+    <div class="auth-switch" id="auth-switch"></div>
+
+    <div class="landing-section">
+      <h3>公开笔记</h3>
+      <div class="landing-public-notes" id="landing-public-notes">
+        <div class="loading-wrap"><div class="spinner"></div> 加载中...</div>
+      </div>
+    </div>
+    <div class="landing-section">
+      <h3>留言板</h3>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+        <input class="f-input" id="landing-gb-name" placeholder="你的名字..." style="font-size:12px">
+        <textarea class="f-textarea" id="landing-gb-msg" placeholder="写点什么..." style="min-height:60px;font-size:12px"></textarea>
+        <button class="btn btn-primary btn-sm" id="btn-landing-gb" style="align-self:flex-end">发送</button>
+      </div>
+      <div class="landing-public-notes" id="landing-messages" style="max-height:200px">
+        <div class="loading-wrap"><div class="spinner"></div> 加载中...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== APP CONTAINER ====== -->
+<div class="app hidden" id="app-container">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <h1>XY空间</h1>
+      <div class="sub">个人知识库 &middot; 效率工具</div>
+    </div>
+    <div class="header-right">
+      <div class="clock">
+        <div class="time" id="clock-time">00:00:00</div>
+        <div class="date" id="clock-date">2026-05-18</div>
+      </div>
+      <div class="search-wrap">
+        <span class="sic">&#8981;</span>
+        <input type="text" id="global-search" placeholder="搜索... (Ctrl+K)" autocomplete="off">
+      </div>
+      <div class="user-menu">
+        <span class="uname" id="current-username"></span>
+        <button class="btn btn-sm" id="btn-logout">退出</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <nav class="tabs" id="nav-tabs">
+    <button class="tab active" data-tab="notes">笔记<span class="count" id="notes-count">0</span></button>
+    <button class="tab" data-tab="todos">待办<span class="count" id="todos-count">0</span></button>
+    <button class="tab" data-tab="bookmarks">导航<span class="count" id="bookmarks-count">0</span></button>
+    <button class="tab" data-tab="discover">发现<span class="count" id="discover-count">0</span></button>
+    <button class="tab" data-tab="guestbook">留言<span class="count" id="guestbook-count">0</span></button>
+    <button class="tab" data-tab="settings">设置</button>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- NOTES PANEL -->
+    <section id="panel-notes" class="panel active">
+      <div class="toolbar">
+        <span class="toolbar-label">我的笔记</span>
+        <div class="toolbar-actions">
+          <div class="chips" id="notes-filter-chips"></div>
+          <button class="btn btn-primary btn-sm" id="btn-add-note">+ 新建笔记</button>
+        </div>
+      </div>
+      <div class="notes-grid" id="notes-grid"></div>
+      <div class="empty" id="notes-empty">
+        <div class="eicon">&#9998;</div>
+        <p>还没有笔记</p>
+        <span class="ehint">点击新建笔记开始记录 &middot; Ctrl+N</span>
+      </div>
+    </section>
+
+    <!-- TODOS PANEL -->
+    <section id="panel-todos" class="panel">
+      <div class="toolbar">
+        <span class="toolbar-label">待办事项</span>
+        <div class="toolbar-actions">
+          <div class="chips" id="todos-filter-chips"></div>
+          <button class="btn btn-primary btn-sm" id="btn-add-todo">+ 新建待办</button>
+        </div>
+      </div>
+      <div class="todo-progress">
+        <div class="todo-bar"><div class="todo-bar-fill" id="todo-bar-fill" style="width:0%"></div></div>
+        <div class="todo-bar-text" id="todo-bar-text">0 / 0 已完成</div>
+      </div>
+      <div class="todo-list" id="todo-list"></div>
+      <div class="empty" id="todos-empty">
+        <div class="eicon">&#9745;</div>
+        <p>没有待办事项</p>
+        <span class="ehint">点击新建待办添加任务 &middot; Ctrl+T</span>
+      </div>
+    </section>
+
+    <!-- BOOKMARKS PANEL -->
+    <section id="panel-bookmarks" class="panel">
+      <div class="toolbar">
+        <span class="toolbar-label">网址导航</span>
+        <div class="toolbar-actions">
+          <div class="chips" id="bookmarks-filter-chips"></div>
+          <button class="btn btn-primary btn-sm" id="btn-add-bookmark">+ 新建书签</button>
+        </div>
+      </div>
+      <div class="bm-grid" id="bookmarks-grid"></div>
+      <div class="empty" id="bookmarks-empty">
+        <div class="eicon">&#8599;</div>
+        <p>还没有书签</p>
+        <span class="ehint">点击新建书签收藏网址 &middot; Ctrl+B</span>
+      </div>
+    </section>
+
+    <!-- DISCOVER PANEL -->
+    <section id="panel-discover" class="panel">
+      <div class="toolbar">
+        <span class="toolbar-label">发现 &middot; 所有人的公开笔记</span>
+        <div class="toolbar-actions">
+          <button class="btn btn-sm" id="btn-refresh-discover">刷新</button>
+        </div>
+      </div>
+      <div class="notes-grid" id="discover-grid"></div>
+      <div class="empty" id="discover-empty">
+        <div class="eicon">&#128269;</div>
+        <p>还没有公开笔记</p>
+        <span class="ehint">当有人将笔记设为公开时，会在这里显示</span>
+      </div>
+    </section>
+
+    <!-- GUESTBOOK PANEL -->
+    <section id="panel-guestbook" class="panel">
+      <div class="toolbar">
+        <span class="toolbar-label">留言板</span>
+        <div class="toolbar-actions">
+          <button class="btn btn-sm" id="btn-refresh-gb">刷新</button>
+        </div>
+      </div>
+      <div class="gb-layout">
+        <div class="gb-form-panel">
+          <h3>留个言吧</h3>
+          <p class="gb-hint">写下你想说的话，所有人可见。</p>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="f-group">
+              <label class="f-label">昵称</label>
+              <input class="f-input" id="gb-name" placeholder="你的名字...">
+            </div>
+            <div class="f-group">
+              <label class="f-label">留言</label>
+              <textarea class="f-textarea" id="gb-msg" placeholder="写点什么..." style="min-height:100px"></textarea>
+            </div>
+            <button class="btn btn-primary" id="btn-send-gb">发送留言</button>
+          </div>
+        </div>
+        <div class="gb-msgs-panel" id="gb-msgs-panel">
+          <h3>留言列表</h3>
+          <div id="gb-content-area">
+            <div class="loading-wrap"><div class="spinner"></div> 加载中...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS PANEL -->
+    <section id="panel-settings" class="panel">
+      <div class="settings-grid">
+        <div class="set-card">
+          <h3>账户</h3>
+          <p>当前登录账户信息。你的所有私人数据（笔记、待办、书签）仅自己可见。</p>
+          <div class="set-row"><span class="set-label">用户名</span><span class="set-val" id="set-username">-</span></div>
+          <div class="set-row"><span class="set-label">邮箱</span><span class="set-val" id="set-email">-</span></div>
+        </div>
+        <div class="set-card">
+          <h3>数据管理</h3>
+          <p>仅导出你个人的数据（不含公开内容）。</p>
+          <button class="btn btn-primary btn-sm" id="btn-export">导出 JSON</button>
+        </div>
+        <div class="set-card">
+          <h3>快捷键</h3>
+          <div class="set-row"><span class="set-label">Ctrl + K</span><span class="set-val">全局搜索</span></div>
+          <div class="set-row"><span class="set-label">Ctrl + N</span><span class="set-val">新建笔记</span></div>
+          <div class="set-row"><span class="set-label">Ctrl + T</span><span class="set-val">新建待办</span></div>
+          <div class="set-row"><span class="set-label">Ctrl + B</span><span class="set-val">新建书签</span></div>
+          <div class="set-row"><span class="set-label">Ctrl + 1-6</span><span class="set-val">切换标签页</span></div>
+          <div class="set-row"><span class="set-label">Escape</span><span class="set-val">关闭弹窗</span></div>
+        </div>
+        <div class="set-card">
+          <h3>关于</h3>
+          <p>XY空间 — 基于 Supabase 的个人知识管理与效率工具。数据安全存储在云端，支持多用户注册登录。</p>
+          <p style="font-size:10px;color:#52525b">部署于 GitHub Pages 静态托管 &middot; Supabase 提供后端服务</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ====== MODAL ====== -->
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title"></h3>
+      <button class="modal-close" id="modal-close">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- ====== TOAST ====== -->
+<div class="toast-ctr" id="toast-ctr"></div>
+
+<!-- ====== SCRIPTS ====== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ============================ CONFIG ============================
+// !!! 替换为你的 Supabase 项目信息 !!!
+// 在 https://supabase.com 创建项目后，在 Settings > API 中找到以下信息
+const SUPABASE_URL = 'https://asjjzhbxdupjbnttvxxt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzamp6aGJ4ZHVwamJudHR2eHh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMTMwODYsImV4cCI6MjA5NDY4OTA4Nn0.FfbpUKxbhlgGDtwjXvt9f3PA5B_9BcidHI1cnJX7Shc';
+
+// ============================ SUPABASE CLIENT ============================
+let sb = null;
+function initSupabase(){
+  if(!SUPABASE_URL.includes('YOUR-PROJECT')&&!SUPABASE_ANON_KEY.includes('YOUR-ANON')){
+    try{ sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); return true; }catch(e){}
+  }
+  return false;
+}
+
+// ============================ HELPERS ============================
+function genId(){ return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function fmtDate(ts){
+  const d=new Date(ts); const p=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+// ============================ TOAST ============================
+function toast(msg,type){
+  const ct=document.getElementById('toast-ctr');
+  const el=document.createElement('div');
+  el.className='toast '+(type||'ok'); el.textContent=msg; ct.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .25s'; setTimeout(()=>el.remove(),300); },2500);
+}
+
+// ============================ MODAL ============================
+const mo=document.getElementById('modal-overlay');
+const mt=document.getElementById('modal-title');
+const mb=document.getElementById('modal-body');
+const mf=document.getElementById('modal-footer');
+const mc=document.getElementById('modal-close');
+let modalCb=null;
+
+function openModal(title,bodyHTML,footerHTML,cb){
+  mt.textContent=title; mb.innerHTML=bodyHTML; mf.innerHTML=footerHTML;
+  mo.classList.remove('hidden'); modalCb=cb||null;
+  if(modalCb) modalCb();
+}
+function closeModal(){ mo.classList.add('hidden'); modalCb=null; }
+mc.addEventListener('click',closeModal);
+mo.addEventListener('click',e=>{ if(e.target===mo) closeModal(); });
+
+// ============================ AUTH ============================
+let currentUser=null;
+const authScreen=document.getElementById('auth-screen');
+const appContainer=document.getElementById('app-container');
+let authMode='login'; // 'login' | 'register'
+
+function renderAuthScreen(){
+  if(!sb) return;
+  const title=document.getElementById('auth-title');
+  const subtitle=document.getElementById('auth-subtitle');
+  const fields=document.getElementById('auth-fields');
+  const btnWrap=document.getElementById('auth-btn-wrap');
+  const switchEl=document.getElementById('auth-switch');
+  const errEl=document.getElementById('auth-error');
+
+  title.textContent=authMode==='login'?'登录':'注册';
+  subtitle.textContent=authMode==='login'?'欢迎回来':'创建新账户';
+
+  if(authMode==='login'){
+    fields.innerHTML=
+      '<div class="f-group"><label class="f-label">邮箱</label><input class="f-input" id="auth-email" type="email" placeholder="you@example.com"></div>'+
+      '<div class="f-group"><label class="f-label">密码</label><input class="f-input" id="auth-password" type="password" placeholder="Password"></div>';
+    btnWrap.innerHTML='<button class="btn btn-primary" id="auth-btn" style="width:100%;justify-content:center">登录</button>';
+    switchEl.innerHTML='还没有账户？ <a id="auth-switch-link">立即注册</a>';
+  }else{
+    fields.innerHTML=
+      '<div class="f-group"><label class="f-label">用户名</label><input class="f-input" id="auth-username" placeholder="你的昵称"></div>'+
+      '<div class="f-group"><label class="f-label">邮箱</label><input class="f-input" id="auth-email" type="email" placeholder="you@example.com"></div>'+
+      '<div class="f-group"><label class="f-label">密码</label><input class="f-input" id="auth-password" type="password" placeholder="至少6位"></div>';
+    btnWrap.innerHTML='<button class="btn btn-primary" id="auth-btn" style="width:100%;justify-content:center">注册</button>';
+    switchEl.innerHTML='已有账户？ <a id="auth-switch-link">返回登录</a>';
+  }
+
+  errEl.classList.remove('show');
+  errEl.textContent='';
+
+  document.getElementById('auth-btn').addEventListener('click',handleAuth);
+  document.getElementById('auth-switch-link').addEventListener('click',()=>{
+    authMode=authMode==='login'?'register':'login';
+    renderAuthScreen();
+  });
+  // Enter key
+  fields.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') handleAuth(); });
+  });
+}
+
+async function handleAuth(){
+  if(!sb) return;
+  const errEl=document.getElementById('auth-error');
+  const email=document.getElementById('auth-email').value.trim();
+  const password=document.getElementById('auth-password').value;
+
+  errEl.classList.remove('show');
+
+  if(!email||!password){ errEl.textContent='请填写邮箱和密码'; errEl.classList.add('show'); return; }
+
+  if(authMode==='login'){
+    const {error}=await sb.auth.signInWithPassword({email,password});
+    if(error){ errEl.textContent=error.message; errEl.classList.add('show'); }
+  }else{
+    const username=document.getElementById('auth-username').value.trim();
+    if(!username){ errEl.textContent='请填写用户名'; errEl.classList.add('show'); return; }
+    const {data,error}=await sb.auth.signUp({
+      email,password,
+      options:{ data:{ username } }
+    });
+    if(error){ errEl.textContent=error.message; errEl.classList.add('show'); }
+    else if(data.user&&data.session){
+      // Auto logged in
+    }else{
+      toast('注册成功！请检查邮箱确认链接（或已在 Supabase 关闭邮箱验证）');
+      authMode='login'; renderAuthScreen();
+    }
+  }
+}
+
+async function signOut(){
+  if(!sb) return;
+  await sb.auth.signOut();
+  currentUser=null;
+}
+
+// ============================ DATA API ============================
+// Notes
+async function fetchNotes(){
+  if(!sb||!currentUser) return [];
+  const {data}=await sb.from('notes').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  return data||[];
+}
+async function createNote(note){
+  if(!sb||!currentUser) return null;
+  const {data,error}=await sb.from('notes').insert({
+    ...note,
+    user_id:currentUser.id,
+    author_name:currentUser.user_metadata?.username||currentUser.email
+  }).select().single();
+  if(error) throw error;
+  return data;
+}
+async function updateNote(id,updates){
+  if(!sb) return;
+  const {error}=await sb.from('notes').update(updates).eq('id',id).eq('user_id',currentUser.id);
+  if(error) throw error;
+}
+async function deleteNote(id){
+  if(!sb) return;
+  const {error}=await sb.from('notes').delete().eq('id',id).eq('user_id',currentUser.id);
+  if(error) throw error;
+}
+async function fetchPublicNotes(){
+  if(!sb) return [];
+  const {data}=await sb.from('notes').select('*').eq('is_public',true).order('created_at',{ascending:false}).limit(50);
+  return data||[];
+}
+
+// Todos
+async function fetchTodos(){
+  if(!sb||!currentUser) return [];
+  const {data}=await sb.from('todos').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  return data||[];
+}
+async function createTodo(todo){
+  if(!sb||!currentUser) return null;
+  const {data,error}=await sb.from('todos').insert({...todo,user_id:currentUser.id}).select().single();
+  if(error) throw error;
+  return data;
+}
+async function updateTodo(id,updates){
+  if(!sb) return;
+  const {error}=await sb.from('todos').update(updates).eq('id',id).eq('user_id',currentUser.id);
+  if(error) throw error;
+}
+async function deleteTodo(id){
+  if(!sb) return;
+  const {error}=await sb.from('todos').delete().eq('id',id).eq('user_id',currentUser.id);
+  if(error) throw error;
+}
+
+// Bookmarks
+async function fetchBookmarks(){
+  if(!sb||!currentUser) return [];
+  const {data}=await sb.from('bookmarks').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  return data||[];
+}
+async function createBookmark(bm){
+  if(!sb||!currentUser) return null;
+  const {data,error}=await sb.from('bookmarks').insert({...bm,user_id:currentUser.id}).select().single();
+  if(error) throw error;
+  return data;
+}
+async function updateBookmark(id,updates){
+  if(!sb) return;
+  const {error}=await sb.from('bookmarks').update(updates).eq('id',id).eq('user_id',currentUser.id);
+  if(error) throw error;
+}
+async function deleteBookmark(id){
+  if(!sb) return;
+  const {error}=await sb.from('bookmarks').delete().eq('id',id).eq('user_id',currentUser.id);
+  if(error) throw error;
+}
+
+// Messages
+async function fetchMessages(){
+  if(!sb) return [];
+  const {data}=await sb.from('messages').select('*').order('created_at',{ascending:false}).limit(100);
+  return data||[];
+}
+async function createMessage(msg){
+  if(!sb) return null;
+  const {data,error}=await sb.from('messages').insert(msg).select().single();
+  if(error) throw error;
+  return data;
+}
+async function deleteMessage(id){
+  if(!sb) return;
+  const {error}=await sb.from('messages').delete().eq('id',id);
+  if(error) throw error;
+}
+
+// ============================ STATE ============================
+let myNotes=[], myTodos=[], myBookmarks=[], publicNotes=[], messages=[];
+
+async function loadAll(){
+  if(!sb||!currentUser) return;
+  try{
+    const [n,t,b,p,m]=await Promise.all([
+      fetchNotes(),fetchTodos(),fetchBookmarks(),
+      fetchPublicNotes(),fetchMessages()
+    ]);
+    myNotes=n; myTodos=t; myBookmarks=b; publicNotes=p; messages=m;
+  }catch(e){ console.error('Load error:',e); }
+  renderAll();
+}
+
+// ============================ RENDER NOTES ============================
+let notesFilter='all';
+let noteTags=new Set();
+
+function collectNoteTags(){
+  noteTags=new Set();
+  myNotes.forEach(n=>(n.tags||[]).forEach(t=>noteTags.add(t)));
+}
+function renderNoteFilters(){
+  collectNoteTags();
+  let h='<button class="chip active" data-filter="all">全部</button>';
+  noteTags.forEach(t=>h+='<button class="chip" data-filter="'+esc(t)+'">#'+esc(t)+'</button>');
+  document.getElementById('notes-filter-chips').innerHTML=h;
+  document.querySelectorAll('#notes-filter-chips .chip').forEach(b=>{
+    b.addEventListener('click',()=>{
+      notesFilter=b.dataset.filter;
+      document.querySelectorAll('#notes-filter-chips .chip').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      renderNotes();
+    });
+  });
+}
+function renderNotes(){
+  let list=myNotes;
+  if(notesFilter!=='all') list=list.filter(n=>(n.tags||[]).includes(notesFilter));
+  const q=document.getElementById('global-search').value.trim().toLowerCase();
+  if(q) list=list.filter(n=>n.title.toLowerCase().includes(q)||(n.content||'').toLowerCase().includes(q)||(n.tags||[]).some(t=>t.toLowerCase().includes(q)));
+
+  document.getElementById('notes-empty').style.display=list.length===0?'flex':'none';
+  document.getElementById('notes-grid').style.display=list.length===0?'none':'grid';
+  document.getElementById('notes-count').textContent=myNotes.length;
+
+  document.getElementById('notes-grid').innerHTML=list.map(n=>
+    '<div class="note-card" data-id="'+n.id+'" onclick="editNote(\''+n.id+'\')">'+
+      '<span class="npublic '+(n.is_public?'pub':'priv')+'">'+(n.is_public?'公开':'私有')+'</span>'+
+      '<div class="ntitle">'+esc(n.title||'未命名')+'</div>'+
+      '<div class="npreview">'+esc(n.content||'')+'</div>'+
+      '<div class="nmeta"><div class="ntags">'+(n.tags||[]).map(t=>'<span class="ntag">#'+esc(t)+'</span>').join('')+'</div>'+
+      '<span>'+fmtDate(n.created_at)+'</span></div>'+
+    '</div>'
+  ).join('');
+  renderNoteFilters();
+}
+function editNote(id){ const n=myNotes.find(x=>x.id===id); if(n) openNoteForm(n); }
+
+function openNoteForm(note){
+  const edit=!!note;
+  const body=
+    '<div class="f-group"><label class="f-label">标题</label><input class="f-input" id="nf-title" value="'+esc(note?note.title:'')+'" placeholder="笔记标题..."></div>'+
+    '<div class="f-group"><label class="f-label">内容</label><textarea class="f-textarea" id="nf-content" placeholder="笔记内容...">'+esc(note?note.content||'':'')+'</textarea></div>'+
+    '<div class="f-group"><label class="f-label">标签（逗号分隔）</label><input class="f-input" id="nf-tags" value="'+esc(note?(note.tags||[]).join(', '):'')+'" placeholder="标签1, 标签2"></div>'+
+    '<label class="f-check"><input type="checkbox" id="nf-public"'+(note&&note.is_public?' checked':'')+'> 公开此笔记（所有人可见）</label>';
+  const footer=
+    (edit?'<button class="btn btn-danger btn-sm" id="nf-del">删除</button>':'')+
+    '<button class="btn btn-sm" onclick="closeModal()">取消</button>'+
+    '<button class="btn btn-primary btn-sm" id="nf-save">'+(edit?'更新':'保存')+'</button>';
+
+  openModal(edit?'编辑笔记':'新建笔记',body,footer,()=>{
+    document.getElementById('nf-save').addEventListener('click',async ()=>{
+      const title=document.getElementById('nf-title').value.trim();
+      const content=document.getElementById('nf-content').value.trim();
+      const tags=document.getElementById('nf-tags').value.split(',').map(x=>x.trim()).filter(Boolean);
+      const isPublic=document.getElementById('nf-public').checked;
+      try{
+        if(edit){
+          await updateNote(note.id,{title,content,tags,is_public:isPublic,updated_at:new Date().toISOString()});
+        }else{
+          await createNote({title,content,tags,is_public:isPublic});
+        }
+        closeModal(); await loadAll(); toast(edit?'笔记已更新':'笔记已创建');
+      }catch(e){ toast('操作失败: '+e.message,'err'); }
+    });
+    const del=document.getElementById('nf-del');
+    if(del) del.addEventListener('click',async ()=>{
+      if(confirm('确定删除？')){ try{ await deleteNote(note.id); closeModal(); await loadAll(); toast('笔记已删除','err'); }catch(e){ toast('删除失败','err'); } }
+    });
+  });
+}
+
+// ============================ RENDER TODOS ============================
+let todosFilter='all';
+const todoCats=['工作','学习','生活','项目'];
+function renderTodoFilters(){
+  let h='<button class="chip active" data-filter="all">全部</button>';
+  h+='<button class="chip" data-filter="active">进行中</button><button class="chip" data-filter="done">已完成</button>';
+  todoCats.forEach(c=>h+='<button class="chip" data-filter="cat:'+c+'">'+c+'</button>');
+  document.getElementById('todos-filter-chips').innerHTML=h;
+  document.querySelectorAll('#todos-filter-chips .chip').forEach(b=>{
+    b.addEventListener('click',()=>{
+      todosFilter=b.dataset.filter;
+      document.querySelectorAll('#todos-filter-chips .chip').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); renderTodos();
+    });
+  });
+}
+function renderTodos(){
+  let list=myTodos;
+  if(todosFilter==='active') list=list.filter(t=>!t.completed);
+  else if(todosFilter==='done') list=list.filter(t=>t.completed);
+  else if(todosFilter.startsWith('cat:')) list=list.filter(t=>t.category===todosFilter.slice(4));
+  const q=document.getElementById('global-search').value.trim().toLowerCase();
+  if(q) list=list.filter(t=>t.text.toLowerCase().includes(q));
+
+  const total=myTodos.length, done=myTodos.filter(t=>t.completed).length;
+  const pct=total>0?Math.round(done/total*100):0;
+  document.getElementById('todo-bar-fill').style.width=pct+'%';
+  document.getElementById('todo-bar-text').textContent=done+' / '+total+' 已完成';
+  document.getElementById('todos-count').textContent=total;
+  document.getElementById('todos-empty').style.display=list.length===0?'flex':'none';
+  document.getElementById('todo-list').style.display=list.length===0?'none':'flex';
+
+  document.getElementById('todo-list').innerHTML=list.map(t=>
+    '<div class="todo-item'+(t.completed?' done':'')+'" data-id="'+t.id+'">'+
+      '<div class="todo-check" onclick="toggleTodo(\''+t.id+'\')">'+(t.completed?'&#10003;':'')+'</div>'+
+      '<div class="todo-prio '+(t.priority||'medium')+'"></div>'+
+      '<span class="todo-text">'+esc(t.text)+'</span>'+
+      '<span class="todo-cat">'+esc(t.category||'')+'</span>'+
+      '<button class="todo-del" onclick="event.stopPropagation();delTodoItem(\''+t.id+'\')">&times;</button>'+
+    '</div>'
+  ).join('');
+  renderTodoFilters();
+}
+async function toggleTodo(id){
+  const t=myTodos.find(x=>x.id===id); if(!t) return;
+  try{ await updateTodo(id,{completed:!t.completed}); await loadAll(); }catch(e){ toast('操作失败','err'); }
+}
+async function delTodoItem(id){
+  try{ await deleteTodo(id); await loadAll(); toast('待办已删除','err'); }catch(e){ toast('删除失败','err'); }
+}
+function openTodoForm(){
+  const body=
+    '<div class="f-group"><label class="f-label">任务</label><input class="f-input" id="tf-text" placeholder="待办事项..."></div>'+
+    '<div class="f-row"><div class="f-group"><label class="f-label">优先级</label><select class="f-select" id="tf-prio"><option value="high">高</option><option value="medium" selected>中</option><option value="low">低</option></select></div>'+
+    '<div class="f-group"><label class="f-label">分类</label><select class="f-select" id="tf-cat">'+todoCats.map(c=>'<option value="'+c+'">'+c+'</option>').join('')+'</select></div></div>';
+  const footer='<button class="btn btn-sm" onclick="closeModal()">取消</button><button class="btn btn-primary btn-sm" id="tf-save">添加</button>';
+  openModal('新建待办',body,footer,()=>{
+    document.getElementById('tf-save').addEventListener('click',async ()=>{
+      const text=document.getElementById('tf-text').value.trim();
+      if(!text){ toast('请输入内容','err'); return; }
+      try{ await createTodo({text,priority:document.getElementById('tf-prio').value,category:document.getElementById('tf-cat').value}); closeModal(); await loadAll(); toast('待办已添加'); }catch(e){ toast('添加失败','err'); }
+    });
+  });
+}
+
+// ============================ RENDER BOOKMARKS ============================
+let bmFilter='all';
+const bmCats=['开发工具','学习资源','常用工具','设计灵感','其他'];
+function renderBmFilters(){
+  let h='<button class="chip active" data-filter="all">全部</button>';
+  bmCats.forEach(c=>h+='<button class="chip" data-filter="'+c+'">'+c+'</button>');
+  document.getElementById('bookmarks-filter-chips').innerHTML=h;
+  document.querySelectorAll('#bookmarks-filter-chips .chip').forEach(b=>{
+    b.addEventListener('click',()=>{
+      bmFilter=b.dataset.filter;
+      document.querySelectorAll('#bookmarks-filter-chips .chip').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); renderBookmarks();
+    });
+  });
+}
+function faviconURL(url){
+  try{ return 'https://www.google.com/s2/favicons?domain='+new URL(url).hostname+'&sz=32'; }catch(e){ return ''; }
+}
+function renderBookmarks(){
+  let list=myBookmarks;
+  if(bmFilter!=='all') list=list.filter(b=>b.category===bmFilter);
+  const q=document.getElementById('global-search').value.trim().toLowerCase();
+  if(q) list=list.filter(b=>b.title.toLowerCase().includes(q)||b.url.toLowerCase().includes(q)||(b.description||'').toLowerCase().includes(q));
+
+  document.getElementById('bookmarks-empty').style.display=list.length===0?'flex':'none';
+  document.getElementById('bookmarks-grid').style.display=list.length===0?'none':'grid';
+  document.getElementById('bookmarks-count').textContent=myBookmarks.length;
+
+  document.getElementById('bookmarks-grid').innerHTML=list.map(b=>
+    '<a class="bm-card" href="'+esc(b.url)+'" target="_blank" rel="noopener">'+
+      '<div class="bm-fav"><img src="'+faviconURL(b.url)+'" alt="" onerror="this.style.display=\'none\'"></div>'+
+      '<div class="bm-info"><div class="bmtitle">'+esc(b.title)+'</div><div class="bmurl">'+esc(b.url)+'</div>'+
+      (b.description?'<div class="bmdesc">'+esc(b.description)+'</div>':'')+
+      '<span class="bm-cat">'+esc(b.category||'其他')+'</span></div>'+
+      '<div class="bm-act" onclick="event.preventDefault();event.stopPropagation();">'+
+        '<button onclick="editBm(\''+b.id+'\')" title="编辑">&#9998;</button>'+
+        '<button onclick="delBm(\''+b.id+'\')" title="删除">&times;</button></div>'+
+    '</a>'
+  ).join('');
+  renderBmFilters();
+}
+async function delBm(id){
+  if(confirm('确定删除？')){ try{ await deleteBookmark(id); await loadAll(); toast('书签已删除','err'); }catch(e){ toast('删除失败','err'); } }
+}
+function editBm(id){ const b=myBookmarks.find(x=>x.id===id); if(b) openBmForm(b); }
+function openBmForm(bm){
+  const edit=!!bm;
+  const body=
+    '<div class="f-group"><label class="f-label">名称</label><input class="f-input" id="bf-title" value="'+esc(bm?bm.title:'')+'" placeholder="网站名称..."></div>'+
+    '<div class="f-group"><label class="f-label">网址</label><input class="f-input" id="bf-url" value="'+esc(bm?bm.url:'')+'" placeholder="https://..."></div>'+
+    '<div class="f-row"><div class="f-group"><label class="f-label">分类</label><select class="f-select" id="bf-cat">'+bmCats.map(c=>'<option value="'+c+'"'+(bm&&bm.category===c?' selected':'')+'>'+c+'</option>').join('')+'</select></div>'+
+    '<div class="f-group"><label class="f-label">备注</label><input class="f-input" id="bf-desc" value="'+esc(bm?bm.description||'':'')+'" placeholder="备注..."></div></div>';
+  const footer=
+    (edit?'<button class="btn btn-danger btn-sm" id="bf-del">删除</button>':'')+
+    '<button class="btn btn-sm" onclick="closeModal()">取消</button>'+
+    '<button class="btn btn-primary btn-sm" id="bf-save">'+(edit?'更新':'保存')+'</button>';
+  openModal(edit?'编辑书签':'新建书签',body,footer,()=>{
+    document.getElementById('bf-save').addEventListener('click',async ()=>{
+      const t=document.getElementById('bf-title').value.trim(), u=document.getElementById('bf-url').value.trim();
+      if(!t||!u){ toast('请填写名称和网址','err'); return; }
+      try{
+        if(edit) await updateBookmark(bm.id,{title:t,url:u,category:document.getElementById('bf-cat').value,description:document.getElementById('bf-desc').value.trim()});
+        else await createBookmark({title:t,url:u,category:document.getElementById('bf-cat').value,description:document.getElementById('bf-desc').value.trim()});
+        closeModal(); await loadAll(); toast(edit?'书签已更新':'书签已添加');
+      }catch(e){ toast('操作失败','err'); }
+    });
+    const del=document.getElementById('bf-del');
+    if(del) del.addEventListener('click',async ()=>{
+      if(confirm('确定删除？')){ try{ await deleteBookmark(bm.id); closeModal(); await loadAll(); toast('书签已删除','err'); }catch(e){ toast('删除失败','err'); } }
+    });
+  });
+}
+
+// ============================ RENDER DISCOVER ============================
+function renderDiscover(){
+  const list=publicNotes.filter(n=>n.user_id!==(currentUser?currentUser.id:''));
+  document.getElementById('discover-count').textContent=list.length;
+  document.getElementById('discover-empty').style.display=list.length===0?'flex':'none';
+  document.getElementById('discover-grid').style.display=list.length===0?'none':'grid';
+  document.getElementById('discover-grid').innerHTML=list.map(n=>
+    '<div class="note-card" style="cursor:default">'+
+      '<span class="npublic pub">公开</span>'+
+      '<div class="note-author">作者 <span>'+esc(n.author_name||'匿名')+'</span></div>'+
+      '<div class="ntitle">'+esc(n.title||'未命名')+'</div>'+
+      '<div class="npreview">'+esc(n.content||'')+'</div>'+
+      '<div class="nmeta"><div class="ntags">'+(n.tags||[]).map(t=>'<span class="ntag">#'+esc(t)+'</span>').join('')+'</div>'+
+      '<span>'+fmtDate(n.created_at)+'</span></div>'+
+    '</div>'
+  ).join('');
+}
+
+// ============================ RENDER GUESTBOOK ============================
+function renderGuestbook(){
+  document.getElementById('guestbook-count').textContent=messages.length;
+  const area=document.getElementById('gb-content-area');
+  if(messages.length===0){
+    area.innerHTML='<div class="empty" style="padding:40px"><div class="eicon" style="font-size:32px">&#9993;</div><p>暂无留言</p><p style="font-size:11px;color:#52525b">成为第一个留言的人吧</p></div>';
+  }else{
+    area.innerHTML=
+      '<div style="margin-bottom:12px;font-size:11px;color:#63636b">共 '+messages.length+' 条留言</div>'+
+      '<div class="gb-msg-list">'+messages.map(m=>
+        '<div class="gb-msg" data-id="'+m.id+'">'+
+          '<div class="msg-header"><span class="msg-name">'+esc(m.name||'匿名')+'</span><span class="msg-time">'+fmtDate(m.created_at)+'</span></div>'+
+          '<div class="msg-body">'+esc(m.text)+'</div>'+
+          (currentUser?'<button class="msg-del" onclick="delMsg(\''+m.id+'\')">&times;</button>':'')+
+        '</div>'
+      ).join('')+'</div>';
+  }
+}
+async function delMsg(id){
+  if(confirm('删除这条留言？')){ try{ await deleteMessage(id); await loadAll(); toast('留言已删除','err'); }catch(e){ toast('删除失败','err'); } }
+}
+
+// ============================ RENDER SETTINGS ============================
+function renderSettings(){
+  if(currentUser){
+    document.getElementById('set-username').textContent=currentUser.user_metadata?.username||currentUser.email;
+    document.getElementById('set-email').textContent=currentUser.email;
+  }
+}
+
+// ============================ RENDER ALL ============================
+function renderLandingMessages(){
+  const container=document.getElementById('landing-messages');
+  if(!container) return;
+  const list=messages.slice(0,10);
+  if(list.length===0){
+    container.innerHTML='<div style="font-size:12px;color:#52525b;text-align:center;padding:12px">暂无留言</div>';
+  }else{
+    container.innerHTML='<div class="gb-msg-list">'+list.map(m=>
+      '<div class="gb-msg"><div class="msg-header"><span class="msg-name">'+esc(m.name||'匿名')+'</span><span class="msg-time">'+fmtDate(m.created_at)+'</span></div>'+
+      '<div class="msg-body">'+esc(m.text)+'</div></div>'
+    ).join('')+'</div>';
+  }
+}
+
+function renderAll(){
+  renderNotes();
+  renderTodos();
+  renderBookmarks();
+  renderDiscover();
+  renderGuestbook();
+  renderSettings();
+  renderLandingPublicNotes();
+  renderLandingMessages();
+}
+
+// ============================ LANDING PUBLIC NOTES ============================
+function renderLandingPublicNotes(){
+  const container=document.getElementById('landing-public-notes');
+  if(!container) return;
+  const list=publicNotes.slice(0,5);
+  if(list.length===0){
+    container.innerHTML='<div style="font-size:12px;color:#52525b;text-align:center;padding:16px">还没有公开笔记</div>';
+  }else{
+    container.innerHTML=list.map(n=>
+      '<div class="landing-note">'+
+        '<div class="ln-title">'+esc(n.title||'未命名')+'</div>'+
+        '<div class="ln-preview">'+esc(n.content||'')+'</div>'+
+        '<div class="ln-author">by '+esc(n.author_name||'匿名')+' &middot; '+fmtDate(n.created_at)+'</div>'+
+      '</div>'
+    ).join('');
+  }
+}
+
+// ============================ CLOCK ============================
+function updateClock(){
+  const now=new Date();
+  const days=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  document.getElementById('clock-time').textContent=now.toTimeString().slice(0,8);
+  document.getElementById('clock-date').textContent=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+days[now.getDay()];
+}
+
+// ============================ TABS ============================
+function initTabs(){
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      document.getElementById('panel-'+tab.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+// ============================ SEARCH ============================
+function initSearch(){
+  document.getElementById('global-search').addEventListener('input',renderAll);
+}
+
+// ============================ SHORTCUTS ============================
+function initShortcuts(){
+  document.addEventListener('keydown',e=>{
+    const ctrl=e.ctrlKey||e.metaKey;
+    if(!ctrl&&e.key==='Escape'){ closeModal(); return; }
+    if(ctrl&&e.key==='k'){ e.preventDefault(); document.getElementById('global-search').focus(); }
+    if(ctrl&&e.key==='n'){ e.preventDefault(); openNoteForm(); }
+    if(ctrl&&e.key==='t'){ e.preventDefault(); openTodoForm(); }
+    if(ctrl&&e.key==='b'){ e.preventDefault(); openBmForm(); }
+    if(ctrl&&e.key>='1'&&e.key<='6'){
+      e.preventDefault();
+      const tabs=document.querySelectorAll('.tab');
+      const idx=parseInt(e.key)-1;
+      if(tabs[idx]) tabs[idx].click();
+    }
+  });
+}
+
+// ============================ BUTTON EVENTS ============================
+function initButtons(){
+  document.getElementById('btn-add-note').addEventListener('click',()=>openNoteForm());
+  document.getElementById('btn-add-todo').addEventListener('click',()=>openTodoForm());
+  document.getElementById('btn-add-bookmark').addEventListener('click',()=>openBmForm());
+  document.getElementById('btn-logout').addEventListener('click',async ()=>{ await signOut(); });
+
+  document.getElementById('btn-refresh-discover').addEventListener('click',async ()=>{ await loadAll(); toast('已刷新'); });
+  document.getElementById('btn-refresh-gb').addEventListener('click',async ()=>{ await loadAll(); toast('已刷新'); });
+
+  // Guestbook send
+  document.getElementById('btn-send-gb').addEventListener('click',async ()=>{
+    const name=document.getElementById('gb-name').value.trim();
+    const text=document.getElementById('gb-msg').value.trim();
+    if(!text){ toast('请输入留言内容','err'); return; }
+    try{
+      await createMessage({name:name||'匿名',text,user_id:currentUser?currentUser.id:null});
+      document.getElementById('gb-name').value='';
+      document.getElementById('gb-msg').value='';
+      await loadAll(); toast('留言已发送');
+    }catch(e){ toast('发送失败: '+e.message,'err'); }
+  });
+
+  // Landing guestbook
+  const btnLandingGb=document.getElementById('btn-landing-gb');
+  if(btnLandingGb) btnLandingGb.addEventListener('click',async ()=>{
+    const name=document.getElementById('landing-gb-name').value.trim();
+    const text=document.getElementById('landing-gb-msg').value.trim();
+    if(!text){ toast('请输入留言内容','err'); return; }
+    try{
+      await createMessage({name:name||'匿名',text,user_id:null});
+      document.getElementById('landing-gb-name').value='';
+      document.getElementById('landing-gb-msg').value='';
+      messages=await fetchMessages();
+      renderLandingMessages();
+      toast('留言已发送');
+    }catch(e){ toast('发送失败: '+e.message,'err'); }
+  });
+
+  // Export
+  document.getElementById('btn-export').addEventListener('click',()=>{
+    const exportData={notes:myNotes,todos:myTodos,bookmarks:myBookmarks};
+    const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+    toast('数据已导出');
+  });
+
+  // Empty state clicks
+  document.getElementById('notes-empty').addEventListener('click',()=>openNoteForm());
+  document.getElementById('todos-empty').addEventListener('click',()=>openTodoForm());
+  document.getElementById('bookmarks-empty').addEventListener('click',()=>openBmForm());
+}
+
+// ============================ AUTH STATE LISTENER ============================
+function initAuthListener(){
+  if(!sb) return;
+  sb.auth.onAuthStateChange(async (event,session)=>{
+    currentUser=session?session.user:null;
+    if(currentUser){
+      authScreen.classList.add('hidden');
+      appContainer.classList.remove('hidden');
+      document.getElementById('current-username').textContent=currentUser.user_metadata?.username||currentUser.email;
+      await loadAll();
+    }else{
+      authScreen.classList.remove('hidden');
+      appContainer.classList.add('hidden');
+      // Still load public content for landing page
+      try{
+        const [pn,ms]=await Promise.all([fetchPublicNotes(),fetchMessages()]);
+        publicNotes=pn; messages=ms;
+      }catch(e){}
+      renderLandingPublicNotes();
+      renderLandingMessages();
+    }
+  });
+}
+
+// ============================ INIT ============================
+async function init(){
+  const hasSupabase=initSupabase();
+
+  if(!hasSupabase){
+    appContainer.classList.remove('hidden');
+    document.getElementById('auth-screen').innerHTML=
+      '<div style="text-align:center;padding:40px;max-width:500px;margin:auto">'+
+        '<h2 style="color:#fafafa;margin-bottom:12px">需要配置 Supabase</h2>'+
+        '<p style="color:#71717a;font-size:13px;line-height:1.7;margin-bottom:20px">请按以下步骤设置：<br><br>'+
+        '1. 在 <a href="https://supabase.com" target="_blank" style="color:#fafafa">supabase.com</a> 创建免费项目<br>'+
+        '2. 在 SQL Editor 中运行 <code style="background:#1c1c21;padding:2px 6px;border-radius:4px">setup.sql</code> 脚本<br>'+
+        '3. 在 Settings > API 中复制 URL 和 anon key<br>'+
+        '4. 打开 <code style="background:#1c1c21;padding:2px 6px;border-radius:4px">index.html</code>，将顶部的 <code style="background:#1c1c21;padding:2px 6px;border-radius:4px">SUPABASE_URL</code> 和 <code style="background:#1c1c21;padding:2px 6px;border-radius:4px">SUPABASE_ANON_KEY</code> 替换为你的值</p>'+
+        '<p style="color:#52525b;font-size:11px">setup.sql 文件已包含建表和 RLS 策略的完整 SQL。</p>'+
+      '</div>';
+    return;
+  }
+
+  // Check for existing session
+  const {data:{session}}=await sb.auth.getSession();
+  currentUser=session?session.user:null;
+
+  initTabs(); initSearch(); initShortcuts(); initButtons();
+  updateClock(); setInterval(updateClock,1000);
+  initAuthListener();
+
+  if(currentUser){
+    authScreen.classList.add('hidden');
+    appContainer.classList.remove('hidden');
+    document.getElementById('current-username').textContent=currentUser.user_metadata?.username||currentUser.email;
+    await loadAll();
+  }else{
+    authScreen.classList.remove('hidden');
+    appContainer.classList.add('hidden');
+    renderAuthScreen();
+    try{
+      const [pn,ms]=await Promise.all([fetchPublicNotes(),fetchMessages()]);
+      publicNotes=pn; messages=ms;
+    }catch(e){}
+    renderLandingPublicNotes();
+    renderLandingMessages();
+  }
+}
+
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
