@@ -1237,7 +1237,7 @@ const DB = {
       .sort((a, b) => b.count - a.count);
 
     return { coinRank, timeRank, featuredRank };
-  }
+  },
 
   // ===== 管理员数据管理 =====
   adminReadTable(tableName) {
@@ -1403,8 +1403,6 @@ const SUPABASE_CONFIG = {
   url: 'https://kvcxfogboykqufdrmokf.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2Y3hmb2dib3lrcXVmZHJtb2tmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzM3OTYsImV4cCI6MjA5NDc0OTc5Nn0.HhpC1QqQZ1jmQTkL0Y9R1d2RNSCBBMjgbZUicQY1P9w',
 };
-try { DB._init(); } catch(e) { console.error('DB init error:', e); }
-
 // ===================== Supabase 云同步适配器（可选） =====================
 // 使用 Supabase 作为后端数据库，实现多设备数据同步
 // 帽子云托管只需部署这个单文件，数据库由 Supabase 提供
